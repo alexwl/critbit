@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, IncoherentInstances #-}
+{-# LANGUAGE CPP, MultiParamTypeClasses, FlexibleInstances, IncoherentInstances #-}
 {-# LANGUAGE OverloadedStrings, Rank2Types #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Properties.Common
@@ -30,7 +30,13 @@ import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import Data.Word
 import Test.Framework (Test)
-import Test.QuickCheck (Arbitrary(..), Args(..), quickCheckWith, stdArgs)
+import Test.QuickCheck (Arbitrary(..), Args(..), quickCheckWith, stdArgs
+#if MIN_VERSION_QuickCheck(2,10,0)
+ , ASCIIString(..))
+#else
+ )
+#endif
+
 import Test.QuickCheck.Gen (Gen, resize, sized)
 import Test.QuickCheck.Property (Property, Testable, (===), (.&&.), (.||.))
 
@@ -60,8 +66,13 @@ instance Arbitrary B.ByteString where
     shrink    = map B.pack . shrink . B.unpack
 
 instance Arbitrary T.Text where
+#if MIN_VERSION_QuickCheck(2,10,0)
+    arbitrary = T.pack . getASCIIString <$> arbitrary
+    shrink    = map (T.pack . getASCIIString) . shrink . ASCIIString . T.unpack
+#else
     arbitrary = T.pack <$> arbitrary
     shrink    = map T.pack . shrink . T.unpack
+#endif
 
 instance Arbitrary (U.Vector Word8) where
     arbitrary = arbitraryV
